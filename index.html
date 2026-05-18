@@ -1,0 +1,1594 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#1a1a2e" />
+    <title>Racketlon Calc</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #1a1a2e;
+        color: #fff;
+        min-height: 100vh;
+        padding: 12px;
+      }
+      .container {
+        max-width: 500px;
+        margin: 0 auto;
+      }
+      .app-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .app-title {
+        text-align: left;
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #fff;
+        letter-spacing: 1px;
+      }
+      .btn-clear-top {
+        border: 1px solid rgba(148, 155, 189, 0.35);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.035);
+        color: #949bbd;
+        padding: 6px 9px;
+        font-size: 0.72rem;
+        font-weight: 650;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .btn-clear-top:active {
+        border-color: rgba(233, 69, 96, 0.65);
+        color: #e94560;
+        background: rgba(233, 69, 96, 0.08);
+      }
+
+      /* Colors */
+      .color-a {
+        color: #4ecdc4;
+      }
+      .color-b {
+        color: #ff6b9d;
+      }
+
+      /* Header with players */
+      .header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding: 0 8px;
+      }
+      .player-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1.4rem;
+        font-weight: 700;
+      }
+      .player-label .symbol {
+        font-size: 1.8rem;
+        line-height: 1;
+      }
+      .player-label.player-a {
+        color: #4ecdc4;
+      }
+      .player-label.player-b {
+        color: #ff6b9d;
+      }
+      .player-label.winner {
+        text-shadow: 0 0 10px currentColor;
+      }
+      .player-label .trophy {
+        display: none;
+        font-size: 1.4rem;
+        margin-left: 4px;
+      }
+      .player-label.winner .trophy {
+        display: inline;
+      }
+
+      /* Winner column highlight */
+      .score-input.winner-glow {
+        box-shadow: 0 0 12px currentColor;
+        border-width: 3px;
+      }
+      .score-input.input-a.winner-glow {
+        box-shadow: 0 0 15px #4ecdc4;
+        background: rgba(78, 205, 196, 0.15);
+      }
+      .score-input.input-b.winner-glow {
+        box-shadow: 0 0 15px #ff6b9d;
+        background: rgba(255, 107, 157, 0.15);
+      }
+
+      /* Dim tennis row when not needed */
+      .sport-row.not-needed {
+        opacity: 0.3;
+      }
+      .sport-row.not-needed .score-input {
+        pointer-events: none;
+      }
+      .vs-label {
+        color: #7a81a6;
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 1px;
+      }
+
+      /* Scores grid */
+      .scores-grid {
+        background: #16213e;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 16px;
+      }
+
+      .sport-row {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 12px;
+        border-bottom: 1px solid #0f3460;
+        overflow: hidden;
+        gap: 8px;
+      }
+      .sport-row:last-child {
+        border-bottom: none;
+      }
+
+      .sport-icon {
+        font-size: 1.6rem;
+        color: #fff;
+        opacity: 0.9;
+      }
+
+      .btn-x {
+        width: 28px;
+        height: 28px;
+        border: none;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #666;
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .btn-x:active {
+        background: #ff4757;
+        color: #fff;
+      }
+
+      .score-center {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 1;
+      }
+
+      .score-input {
+        width: 52px;
+        height: 52px;
+        padding: 0;
+        border: 3px solid #0f3460;
+        border-radius: 12px;
+        background: #1a1a2e;
+        color: #fff;
+        font-size: 1.5rem;
+        font-weight: 700;
+        text-align: center;
+        -moz-appearance: textfield;
+      }
+      .score-input::-webkit-outer-spin-button,
+      .score-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+      }
+      .score-input:focus {
+        outline: none;
+      }
+      .score-input.input-a {
+        border-color: #4ecdc4;
+      }
+      .score-input.input-b {
+        border-color: #ff6b9d;
+      }
+      .score-input.error {
+        border-color: #ff4757 !important;
+        background: rgba(255, 71, 87, 0.2);
+      }
+
+      .btn-21 {
+        width: 36px;
+        height: 36px;
+        border: none;
+        border-radius: 8px;
+        background: #e94560;
+        color: #fff;
+        font-size: 0.85rem;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .btn-21:active {
+        transform: scale(0.95);
+      }
+
+      .score-sep {
+        font-size: 1.5rem;
+        color: #6c7396;
+        font-weight: 300;
+        margin: 0 4px;
+      }
+
+      /* Total row */
+      .total-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 12px;
+        background: #0f3460;
+        gap: 16px;
+      }
+      .total-score {
+        font-size: 2.2rem;
+        font-weight: 800;
+        min-width: 60px;
+        text-align: center;
+      }
+      .total-score.score-a {
+        color: #4ecdc4;
+      }
+      .total-score.score-b {
+        color: #ff6b9d;
+      }
+      .total-score.winner {
+        text-shadow: 0 0 15px currentColor;
+      }
+      .total-score.loser {
+        opacity: 0.4;
+      }
+      .total-sep {
+        font-size: 1.5rem;
+        color: #6c7396;
+      }
+
+      .delta-row {
+        text-align: center;
+        padding: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        background: #0a1628;
+        border-radius: 0 0 16px 16px;
+        margin-top: -16px;
+        margin-bottom: 16px;
+      }
+      .delta-row.hidden {
+        display: none;
+      }
+
+      /* Dashboard */
+      .dashboard {
+        background: #16213e;
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      .dashboard.hidden {
+        display: none;
+      }
+      .dashboard h3 {
+        font-size: 0.7rem;
+        color: #7c84a8;
+        margin-bottom: 14px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        text-align: center;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .dash-card {
+        background: #0f3460;
+        border-radius: 12px;
+        padding: 16px 12px;
+        text-align: center;
+      }
+      .dash-card.card-a {
+        border: 2px solid #4ecdc4;
+      }
+      .dash-card.card-b {
+        border: 2px solid #ff6b9d;
+      }
+      .dash-card.card-full {
+        grid-column: 1 / -1;
+        border: 2px solid #ffc107;
+      }
+      .dash-card.card-winner {
+        border: 2px solid #00d26a;
+        background: rgba(0, 210, 106, 0.15);
+      }
+
+      .dash-card .player-tag {
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .dash-card .player-tag .symbol {
+        font-size: 1.2rem;
+      }
+      .dash-card.card-a .player-tag {
+        color: #4ecdc4;
+      }
+      .dash-card.card-b .player-tag {
+        color: #ff6b9d;
+      }
+      .dash-card.card-full .player-tag {
+        color: #ffc107;
+      }
+      .dash-card.card-winner .player-tag {
+        color: #00d26a;
+      }
+
+      .dash-card .objective {
+        font-size: 1.6rem;
+        font-weight: 800;
+      }
+      .dash-card.card-a .objective {
+        color: #4ecdc4;
+      }
+      .dash-card.card-b .objective {
+        color: #ff6b9d;
+      }
+      .dash-card.card-full .objective {
+        color: #ffc107;
+      }
+      .dash-card.card-winner .objective {
+        color: #00d26a;
+      }
+
+      .dash-card .objective-label {
+        font-size: 0.75rem;
+        color: #9fa7c8;
+        margin-top: 4px;
+      }
+
+      .errors-box {
+        background: rgba(255, 71, 87, 0.15);
+        border: 2px solid #ff4757;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 16px;
+      }
+      .errors-box.hidden {
+        display: none !important;
+      }
+      .errors-box ul {
+        list-style: none;
+        font-size: 0.85rem;
+        color: #ff6b6b;
+      }
+
+      .btn-clear {
+        width: 100%;
+        padding: 14px;
+        border: 1px solid #414865;
+        border-radius: 12px;
+        background: transparent;
+        color: #949bbd;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+      .btn-clear:hover {
+        border-color: #666f96;
+        color: #c6cbea;
+      }
+      .btn-clear:active {
+        border-color: #e94560;
+        color: #e94560;
+      }
+
+      footer {
+        text-align: center;
+        padding: 20px 0;
+        color: #7880a3;
+        font-size: 0.7rem;
+      }
+      footer a {
+        color: #aab2d5;
+        text-decoration: none;
+      }
+
+      /* Recap Score Visualization */
+      .recap-widget {
+        background: #16213e;
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      .recap-widget h3 {
+        font-size: 0.7rem;
+        color: #7c84a8;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 16px;
+        text-align: center;
+      }
+      .recap-container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 40px;
+        position: relative;
+      }
+      .recap-track {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        transition:
+          opacity 0.3s,
+          filter 0.3s;
+      }
+      .recap-track.loser {
+        opacity: 0.4;
+        filter: grayscale(70%);
+      }
+      .recap-track.winner .track-bar {
+        box-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
+      }
+      .recap-track.winner-b .track-bar {
+        box-shadow: 0 0 20px rgba(255, 107, 157, 0.5);
+      }
+      .recap-diffs {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        min-width: 30px;
+      }
+      .recap-diffs.diffs-left {
+        text-align: right;
+      }
+      .recap-diffs.diffs-right {
+        text-align: left;
+      }
+      .diff-item {
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .diff-item.diff-pos {
+        color: #4ecdc4;
+      }
+      .diff-item.diff-neg {
+        color: #ff6b9d;
+      }
+      .diff-item.diff-zero {
+        color: #666;
+      }
+      .track-column {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .track-label {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .track-label.label-a {
+        color: #4ecdc4;
+      }
+      .track-label.label-b {
+        color: #ff6b9d;
+      }
+      .track-total {
+        font-size: 0.75rem;
+        color: #a2abc9;
+        margin-bottom: 8px;
+      }
+      .track-bar {
+        width: 60px;
+        display: flex;
+        flex-direction: column;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid #0f3460;
+      }
+      .track-bar.bar-a {
+        border-color: #4ecdc4;
+      }
+      .track-bar.bar-b {
+        border-color: #ff6b9d;
+      }
+      .bar-section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 600;
+        min-height: 24px;
+        position: relative;
+      }
+      .bar-section .section-score {
+        font-size: 0.7rem;
+        font-weight: 700;
+      }
+      .section-pp {
+        background: #e94560;
+      }
+      .section-bad {
+        background: #7b2cbf;
+      }
+      .section-sq {
+        background: #1a936f;
+      }
+      .section-ten {
+        background: #3d5a80;
+      }
+      .section-placeholder {
+        background: #1a1a2e;
+        border: 1px dashed #333;
+      }
+      .recap-status {
+        text-align: center;
+        margin-top: 12px;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.25;
+        max-width: 180px;
+        align-self: center;
+      }
+      .recap-status.status-win-a {
+        color: #4ecdc4;
+      }
+      .recap-status.status-win-b {
+        color: #ff6b9d;
+      }
+      .recap-status.status-progress {
+        color: #c0c7e4;
+      }
+
+      /* New recap: stacked point squares + balance */
+      .physical-balance {
+        position: relative;
+        padding-top: 4px;
+      }
+      .points-recap {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: minmax(92px, 1fr) minmax(118px, 1.15fr) minmax(92px, 1fr);
+        align-items: start;
+        gap: 12px;
+      }
+      .balance-beam {
+        position: absolute;
+        z-index: 1;
+        left: 7%;
+        right: 7%;
+        top: 116px;
+        height: 10px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #f1f4ff, #7d86aa 60%, #283050);
+        box-shadow: 0 7px 14px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.16);
+        transform-origin: 50% 50%;
+      }
+      .balance-fulcrum {
+        position: absolute;
+        z-index: 1;
+        left: calc(50% - 13px);
+        top: 125px;
+        width: 0;
+        height: 0;
+        border-left: 13px solid transparent;
+        border-right: 13px solid transparent;
+        border-bottom: 34px solid rgba(192, 199, 228, 0.5);
+        filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35));
+      }
+      .points-column {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: transform 180ms ease;
+      }
+      .point-grid {
+        display: flex;
+        flex-direction: column-reverse;
+        flex-wrap: wrap;
+        gap: 0;
+        align-content: center;
+        justify-content: flex-start;
+        width: 116px;
+        height: 42px;
+        padding: 1px;
+        border-radius: 8px 8px 3px 3px;
+        background: rgba(5, 10, 28, 0.18);
+        overflow: hidden;
+      }
+      .point-grid.empty {
+        display: flex;
+        min-width: 42px;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+      }
+      .point-square {
+        width: 8px;
+        height: 8px;
+        flex: 0 0 8px;
+        display: block;
+        border-radius: 1.5px;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+      }
+      .point-stack {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+      }
+      .score-plateau {
+        width: 134px;
+        height: 11px;
+        border-radius: 999px 999px 6px 6px;
+        background: linear-gradient(180deg, #ffffff, #b9c1e4 46%, #4a537b 78%, #1f2746);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 7px 14px rgba(0, 0, 0, 0.48);
+      }
+      .score-plateau.plateau-a {
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.35), 0 0 10px rgba(78, 205, 196, 0.22);
+      }
+      .score-plateau.plateau-b {
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.35), 0 0 10px rgba(255, 107, 157, 0.22);
+      }
+      .empty-points {
+        color: #5f6688;
+        font-size: 1.2rem;
+      }
+      .recap-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .score-balance {
+        width: 100%;
+        padding: 9px 8px 8px;
+        border-radius: 12px;
+        background: rgba(15, 52, 96, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        text-align: center;
+      }
+      .needle-gauge {
+        position: relative;
+        height: 42px;
+        margin-bottom: 4px;
+      }
+      .needle-arc {
+        position: absolute;
+        left: 8%;
+        right: 8%;
+        bottom: 6px;
+        height: 24px;
+        border-top: 2px solid rgba(192, 199, 228, 0.45);
+        border-radius: 70px 70px 0 0;
+      }
+      .score-needle {
+        position: absolute;
+        left: 50%;
+        bottom: 5px;
+        width: 3px;
+        height: 33px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #fff, #ffc107);
+        transform-origin: 50% 100%;
+        box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+        font-size: 0;
+      }
+      .needle-pivot {
+        position: absolute;
+        left: calc(50% - 6px);
+        bottom: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        background: #ffc107;
+        box-shadow: 0 0 10px rgba(255, 193, 7, 0.45);
+      }
+      .needle-scale {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 3px;
+        color: #b5bddc;
+        font-size: 0.66rem;
+        font-weight: 700;
+      }
+      .balance-label {
+        margin-top: 5px;
+        font-size: 0.95rem;
+        font-weight: 850;
+      }
+      .remaining-pile {
+        min-width: 82px;
+        border-radius: 12px;
+        padding: 8px 8px 7px;
+        background: repeating-linear-gradient(
+          0deg,
+          rgba(255, 255, 255, 0.045) 0,
+          rgba(255, 255, 255, 0.045) 8px,
+          rgba(255, 255, 255, 0.015) 8px,
+          rgba(255, 255, 255, 0.015) 16px
+        );
+        border: 1px dashed rgba(192, 199, 228, 0.28);
+        text-align: center;
+      }
+      .remaining-number {
+        color: #ffc107;
+        font-size: 1.35rem;
+        font-weight: 900;
+        line-height: 1;
+      }
+      .remaining-label {
+        margin-top: 4px;
+        color: #9fa7c8;
+        font-size: 0.64rem;
+        line-height: 1.05;
+      }
+      .clinch-card {
+        width: 100%;
+        border-radius: 12px;
+        padding: 9px 8px;
+        background: rgba(255, 193, 7, 0.09);
+        border: 1px solid rgba(255, 193, 7, 0.26);
+        color: #e9edff;
+        font-size: 0.74rem;
+        line-height: 1.24;
+        text-align: center;
+      }
+      .clinch-card strong {
+        color: #ffc107;
+        font-size: 0.92rem;
+      }
+      .clinch-card.muted {
+        background: rgba(255, 255, 255, 0.035);
+        border-color: rgba(255, 255, 255, 0.08);
+        color: #9fa7c8;
+      }
+      .clinch-card.clinch-decided {
+        background: rgba(0, 210, 106, 0.12);
+        border-color: rgba(0, 210, 106, 0.35);
+        color: #00d26a;
+        font-weight: 800;
+      }
+
+      @media (max-width: 430px) {
+        body {
+          padding: 10px;
+        }
+        .app-header {
+          margin-bottom: 14px;
+        }
+        .app-title {
+          font-size: 1.05rem;
+          letter-spacing: 0.2px;
+        }
+        .btn-clear-top {
+          padding: 5px 8px;
+          font-size: 0.68rem;
+        }
+        .header-row {
+          padding: 0 2px;
+        }
+        .player-label {
+          gap: 6px;
+          font-size: 1.2rem;
+        }
+        .player-label .symbol {
+          font-size: 1.55rem;
+        }
+        .vs-label {
+          font-size: 0.9rem;
+        }
+        .sport-row {
+          padding: 12px 8px;
+        }
+        .sport-icon {
+          font-size: 1.35rem;
+          opacity: 0.82;
+        }
+        .score-center {
+          gap: 6px;
+        }
+        .score-input {
+          width: 48px;
+          height: 48px;
+          font-size: 1.32rem;
+        }
+        .btn-21 {
+          width: 32px;
+          height: 32px;
+          font-size: 0.78rem;
+        }
+        .btn-x {
+          width: 26px;
+          height: 26px;
+          font-size: 1rem;
+        }
+        .score-sep {
+          margin: 0 2px;
+          font-size: 1.25rem;
+        }
+        .total-score {
+          min-width: 52px;
+          font-size: 2rem;
+        }
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+        .recap-container {
+          flex-direction: column;
+          align-items: center;
+          gap: 18px;
+        }
+        .recap-track {
+          width: 100%;
+          justify-content: center;
+        }
+        .recap-diffs {
+          min-width: 22px;
+        }
+        .track-bar {
+          width: 72px;
+        }
+        .recap-status {
+          order: 3;
+          width: 100%;
+          max-width: none;
+          margin-top: 0;
+          font-size: 1.1rem;
+        }
+        footer {
+          padding-top: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="app-header">
+        <h1 class="app-title">Racketlon Score Calculator</h1>
+        <button class="btn-clear-top" onclick="clearAll()">Effacer</button>
+      </div>
+
+      <!-- Header with A vs B -->
+      <div class="header-row">
+        <div class="player-label player-a" id="labelA">
+          <span class="trophy">🏆</span>
+          <span class="symbol">▲</span>
+          <span>A</span>
+        </div>
+        <div class="vs-label">VS</div>
+        <div class="player-label player-b" id="labelB">
+          <span>B</span>
+          <span class="symbol">■</span>
+          <span class="trophy">🏆</span>
+        </div>
+      </div>
+
+      <div class="scores-grid">
+        <div class="sport-row" data-sport="Ping-pong">
+          <span class="sport-icon" aria-label="Ping-pong">🏓</span>
+          <div class="score-center">
+            <button class="btn-x" onclick="clearCell('tt-a')">×</button>
+            <input
+              type="number"
+              class="score-input input-a"
+              id="tt-a"
+              min="0"
+              step="1"
+              inputmode="numeric"
+              value="18"
+            />
+            <button class="btn-21" onclick="set21('tt-a')">21</button>
+            <span class="score-sep">–</span>
+            <button class="btn-21" onclick="set21('tt-b')">21</button>
+            <input
+              type="number"
+              class="score-input input-b"
+              id="tt-b"
+              min="0"
+              step="1"
+              inputmode="numeric"
+              value="21"
+            />
+            <button class="btn-x" onclick="clearCell('tt-b')">×</button>
+          </div>
+          <span class="sport-icon" aria-label="Ping-pong">🏓</span>
+        </div>
+
+        <div class="sport-row" data-sport="Badminton">
+          <span class="sport-icon" aria-label="Badminton">🏸</span>
+          <div class="score-center">
+            <button class="btn-x" onclick="clearCell('bad-a')">×</button>
+            <input
+              type="number"
+              class="score-input input-a"
+              id="bad-a"
+              min="0"
+              step="1"
+              inputmode="numeric"
+              value="21"
+            />
+            <button class="btn-21" onclick="set21('bad-a')">21</button>
+            <span class="score-sep">–</span>
+            <button class="btn-21" onclick="set21('bad-b')">21</button>
+            <input
+              type="number"
+              class="score-input input-b"
+              id="bad-b"
+              min="0"
+              step="1"
+              inputmode="numeric"
+              value="15"
+            />
+            <button class="btn-x" onclick="clearCell('bad-b')">×</button>
+          </div>
+          <span class="sport-icon" aria-label="Badminton">🏸</span>
+        </div>
+
+        <div class="sport-row" data-sport="Squash">
+          <span class="sport-icon" aria-label="Squash">◉</span>
+          <div class="score-center">
+            <button class="btn-x" onclick="clearCell('sq-a')">×</button>
+            <input
+              type="number"
+              class="score-input input-a"
+              id="sq-a"
+              min="0"
+              step="1"
+              inputmode="numeric"
+              value="15"
+            />
+            <button class="btn-21" onclick="set21('sq-a')">21</button>
+            <span class="score-sep">–</span>
+            <button class="btn-21" onclick="set21('sq-b')">21</button>
+            <input
+              type="number"
+              class="score-input input-b"
+              id="sq-b"
+              min="0"
+              step="1"
+              inputmode="numeric"
+              value="21"
+            />
+            <button class="btn-x" onclick="clearCell('sq-b')">×</button>
+          </div>
+          <span class="sport-icon" aria-label="Squash">◉</span>
+        </div>
+
+        <div class="sport-row" data-sport="Tennis">
+          <span class="sport-icon" aria-label="Tennis">🎾</span>
+          <div class="score-center">
+            <button class="btn-x" onclick="clearCell('ten-a')">×</button>
+            <input
+              type="number"
+              class="score-input input-a"
+              id="ten-a"
+              min="0"
+              step="1"
+              inputmode="numeric"
+            />
+            <button class="btn-21" onclick="set21('ten-a')">21</button>
+            <span class="score-sep">–</span>
+            <button class="btn-21" onclick="set21('ten-b')">21</button>
+            <input
+              type="number"
+              class="score-input input-b"
+              id="ten-b"
+              min="0"
+              step="1"
+              inputmode="numeric"
+            />
+            <button class="btn-x" onclick="clearCell('ten-b')">×</button>
+          </div>
+          <span class="sport-icon" aria-label="Tennis">🎾</span>
+        </div>
+
+        <div class="total-row">
+          <span class="total-score score-a" id="totalA">0</span>
+          <span class="total-sep">–</span>
+          <span class="total-score score-b" id="totalB">0</span>
+        </div>
+      </div>
+
+      <div class="delta-row hidden" id="deltaRow">
+        <span id="deltaText"></span>
+      </div>
+
+      <!-- Dashboard -->
+      <div class="dashboard hidden" id="dashboard">
+        <h3 id="dashTitle">Objectifs Tennis</h3>
+        <div class="dashboard-grid" id="dashGrid"></div>
+      </div>
+
+      <div id="errorsBox" class="errors-box hidden">
+        <ul id="errorsList"></ul>
+      </div>
+
+      <!-- Recap Score Visualization -->
+      <div class="recap-widget" id="recapWidget">
+        <h3>Recap Score</h3>
+        <div class="recap-container" id="recapContainer">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+
+      <footer>
+        <p>Racketlon Calc v2.5 • <a href="https://www.racketlon.net">Règles FIR</a></p>
+      </footer>
+    </div>
+
+    <script>
+      const SPORTS = [
+        { id: "tt", name: "Ping-pong" },
+        { id: "bad", name: "Badminton" },
+        { id: "sq", name: "Squash" },
+        { id: "ten", name: "Tennis" },
+      ];
+
+      function set21(id) {
+        document.getElementById(id).value = 21;
+        update();
+      }
+      function clearCell(id) {
+        document.getElementById(id).value = "";
+        update();
+      }
+      function clearAll() {
+        document.querySelectorAll(".score-input").forEach((i) => (i.value = ""));
+        update();
+      }
+
+      function getScore(prefix) {
+        const a = document.getElementById(prefix + "-a").value;
+        const b = document.getElementById(prefix + "-b").value;
+        return {
+          a,
+          b,
+          aNum: a === "" ? 0 : Number(a),
+          bNum: b === "" ? 0 : Number(b),
+          aInteger: a === "" || Number.isInteger(Number(a)),
+          bInteger: b === "" || Number.isInteger(Number(b)),
+          filled: a !== "" && b !== "",
+        };
+      }
+
+      function isValidCompletedScore(winner, loser) {
+        if (winner === 21) return loser <= 19;
+        return winner > 21 && winner - loser === 2;
+      }
+
+      function buildMatchState() {
+        const errors = [];
+        const sportStates = {};
+        let totalA = 0;
+        let totalB = 0;
+        let sportsPlayed = 0;
+        let gapFound = false;
+
+        SPORTS.forEach((sport, idx) => {
+          const score = getScore(sport.id);
+          const isTennis = idx === 3;
+          const state = {
+            ...score,
+            valid: false,
+            counted: false,
+            errorMsg: "",
+            partial: score.a !== "" || score.b !== "",
+          };
+
+          if (score.filled) {
+            const tennisOnlyStart = isTennis && sportsPlayed === 0 && errors.length === 0;
+
+            if (!score.aInteger || !score.bInteger) {
+              state.errorMsg = `${sport.name}: score entier requis`;
+            } else if (gapFound && !tennisOnlyStart) {
+              state.errorMsg = `${sport.name}: ordre invalide (sport précédent manquant)`;
+            } else {
+              const prevDelta = totalA - totalB;
+              const futureSports = SPORTS.length - idx - 1;
+              const maxOpponentPotential = (futureSports + 1) * 21;
+              const diff = Math.abs(score.aNum - score.bNum);
+              const winner = Math.max(score.aNum, score.bNum);
+              const loser = Math.min(score.aNum, score.bNum);
+              const setCompleted = isValidCompletedScore(winner, loser);
+              const gummiarmTie = isTennis && futureSports === 0 && winner >= 21 && totalA + score.aNum === totalB + score.bNum;
+              const aClinchesEarly = prevDelta + score.aNum > maxOpponentPotential;
+              const bClinchesEarly = score.bNum - prevDelta > maxOpponentPotential;
+              const impossibleOverrun = winner > 21 && winner - loser > 2;
+
+              if (setCompleted || gummiarmTie || ((aClinchesEarly || bClinchesEarly) && !impossibleOverrun)) {
+                state.valid = true;
+              } else if (winner === 21 && loser === 20) {
+                state.errorMsg = `${sport.name}: 21-20 invalide (2 pts d'écart requis)`;
+              } else if (impossibleOverrun) {
+                state.errorMsg = `${sport.name}: score invalide (le set aurait dû s'arrêter à ${loser + 2}-${loser})`;
+              } else if (winner < 21) {
+                state.errorMsg = isTennis
+                  ? `${sport.name}: score en cours (ou seuil de victoire non atteint)`
+                  : `${sport.name}: score en cours (ou seuil de victoire non atteint)`;
+              } else if (diff < 2) {
+                state.errorMsg = `${sport.name}: 2 pts d'écart requis`;
+              }
+            }
+
+            if (state.valid) {
+              state.counted = true;
+              totalA += score.aNum;
+              totalB += score.bNum;
+              sportsPlayed++;
+            } else if (state.errorMsg) {
+              errors.push(state.errorMsg);
+            }
+          } else if (state.partial) {
+            state.errorMsg = `${sport.name}: incomplet`;
+            errors.push(state.errorMsg);
+          } else {
+            gapFound = true;
+          }
+
+          sportStates[sport.id] = state;
+        });
+
+        return { errors, sportStates, totalA, totalB, sportsPlayed };
+      }
+
+      function update() {
+        document.querySelectorAll(".score-input").forEach((el) => el.classList.remove("error"));
+        document.getElementById("labelA").classList.remove("winner");
+        document.getElementById("labelB").classList.remove("winner");
+
+        const { errors, sportStates, totalA, totalB, sportsPlayed } = buildMatchState();
+
+        SPORTS.forEach((sport) => {
+          const state = sportStates[sport.id];
+          if (state.errorMsg) {
+            if (state.a !== "") document.getElementById(sport.id + "-a").classList.add("error");
+            if (state.b !== "") document.getElementById(sport.id + "-b").classList.add("error");
+          }
+        });
+
+        // Errors
+        const errorsBox = document.getElementById("errorsBox");
+        if (errors.length > 0) {
+          document.getElementById("errorsList").innerHTML = errors
+            .map((e) => `<li>${e}</li>`)
+            .join("");
+          errorsBox.classList.remove("hidden");
+        } else {
+          errorsBox.classList.add("hidden");
+        }
+
+        // Totals
+        const totalAEl = document.getElementById("totalA");
+        const totalBEl = document.getElementById("totalB");
+        totalAEl.textContent = totalA;
+        totalBEl.textContent = totalB;
+
+        const delta = totalA - totalB;
+        const sportsRemaining = 4 - sportsPlayed;
+        const maxRemaining = sportsRemaining * 21;
+
+        // Delta display
+        const deltaRow = document.getElementById("deltaRow");
+        const deltaEl = document.getElementById("deltaText");
+        if (sportsPlayed === 0) {
+          deltaRow.classList.add("hidden");
+        } else {
+          deltaRow.classList.remove("hidden");
+          if (delta > 0) {
+            deltaEl.innerHTML = `<span class="color-a">▲ A</span> mène de <strong>${delta}</strong> pts`;
+          } else if (delta < 0) {
+            deltaEl.innerHTML = `<span class="color-b">■ B</span> mène de <strong>${Math.abs(delta)}</strong> pts`;
+          } else {
+            deltaEl.innerHTML = `Égalité`;
+          }
+        }
+
+        // Dashboard
+        const dashboard = document.getElementById("dashboard");
+        const dashTitle = document.getElementById("dashTitle");
+        const dashGrid = document.getElementById("dashGrid");
+
+        let matchWinner = null;
+
+        if (sportsPlayed > 0 && errors.length === 0) {
+          dashboard.classList.remove("hidden");
+
+          const nextSportIdx = SPORTS.findIndex((s) => !getScore(s.id).filled);
+          const nextSport = nextSportIdx >= 0 ? SPORTS[nextSportIdx] : null;
+
+          if (sportsPlayed === 4) {
+            if (delta === 0) {
+              dashTitle.textContent = "GUMMIARM";
+              dashGrid.innerHTML = `
+                <div class="dash-card card-full">
+                  <div class="player-tag">Point décisif</div>
+                  <div class="objective">1 point</div>
+                  <div class="objective-label">Le prochain point gagne</div>
+                </div>
+              `;
+            } else {
+              matchWinner = delta > 0 ? "A" : "B";
+              const sym = delta > 0 ? "▲" : "■";
+              const winColor = delta > 0 ? "#4ecdc4" : "#ff6b9d";
+              dashTitle.textContent = "MATCH TERMINÉ";
+              dashGrid.innerHTML = `
+                <div class="dash-card" style="grid-column:1/-1; border:2px solid ${winColor}; background:${winColor}22;">
+                  <div class="player-tag" style="color:${winColor}"><span style="margin-right:6px;">🏆</span> Vainqueur</div>
+                  <div class="objective" style="color:${winColor}">${sym} ${matchWinner}</div>
+                  <div class="objective-label">${Math.max(totalA, totalB)} - ${Math.min(totalA, totalB)}</div>
+                </div>
+              `;
+            }
+          } else if (Math.abs(delta) > maxRemaining) {
+            matchWinner = delta > 0 ? "A" : "B";
+            const sym = delta > 0 ? "▲" : "■";
+            const winColor = delta > 0 ? "#4ecdc4" : "#ff6b9d";
+            dashTitle.textContent = "MATCH DÉCIDÉ";
+            dashGrid.innerHTML = `
+              <div class="dash-card" style="grid-column:1/-1; border:2px solid ${winColor}; background:${winColor}22;">
+                <div class="player-tag" style="color:${winColor}"><span style="margin-right:6px;">🏆</span> Vainqueur</div>
+                <div class="objective" style="color:${winColor}">${sym} ${matchWinner}</div>
+                <div class="objective-label">+${Math.abs(delta)} pts, max ${maxRemaining} restants</div>
+              </div>
+            `;
+          } else {
+            dashTitle.textContent = `Objectifs ${nextSport.name}`;
+            const absDelta = Math.abs(delta);
+
+            if (sportsRemaining === 1) {
+              if (delta === 0) {
+                dashGrid.innerHTML = `
+                  <div class="dash-card card-a">
+                    <div class="player-tag"><span class="symbol">▲</span> A gagne si</div>
+                    <div class="objective"><span style="color:#4ecdc4">21</span> – <span style="color:#ff6b9d">≤19</span></div>
+                    <div class="objective-label">Gagner le set avec 2 pts d'écart</div>
+                  </div>
+                  <div class="dash-card card-b">
+                    <div class="player-tag"><span class="symbol">■</span> B gagne si</div>
+                    <div class="objective"><span style="color:#4ecdc4">≤19</span> – <span style="color:#ff6b9d">21</span></div>
+                    <div class="objective-label">Gagner le set avec 2 pts d'écart</div>
+                  </div>
+                  <div class="dash-card card-full">
+                    <div class="player-tag">Gummiarm si score</div>
+                    <div class="objective"><span style="color:#4ecdc4">21</span> – <span style="color:#ff6b9d">21</span></div>
+                  </div>
+                `;
+              } else {
+                const leader = delta > 0 ? "A" : "B";
+                const trailer = delta > 0 ? "B" : "A";
+                const leaderSym = delta > 0 ? "▲" : "■";
+                const trailerSym = delta > 0 ? "■" : "▲";
+                const leaderMaxLoss = 20 - absDelta;
+                const gummiLeader = 21 - absDelta;
+
+                let leaderObj, trailerObj, gummiCard;
+
+                if (absDelta > 21) {
+                  leaderObj = `<div class="dash-card card-${leader.toLowerCase()} card-winner">
+                    <div class="player-tag"><span class="symbol">${leaderSym}</span> ${leader}</div>
+                    <div class="objective">Gagné</div>
+                  </div>`;
+                  trailerObj = `<div class="dash-card card-${trailer.toLowerCase()}">
+                    <div class="player-tag"><span class="symbol">${trailerSym}</span> ${trailer}</div>
+                    <div class="objective">—</div>
+                  </div>`;
+                  gummiCard = "";
+                } else if (absDelta === 21) {
+                  if (leader === "A") {
+                    leaderObj = `<div class="dash-card card-a">
+                      <div class="player-tag"><span class="symbol">▲</span> A gagne si</div>
+                      <div class="objective"><span style="color:#4ecdc4">≥1</span> – <span style="color:#ff6b9d">X</span></div>
+                      <div class="objective-label">Marquer 1 point suffit</div>
+                    </div>`;
+                    trailerObj = `<div class="dash-card card-b">
+                      <div class="player-tag"><span class="symbol">■</span> B seule chance</div>
+                      <div class="objective"><span style="color:#4ecdc4">0</span> – <span style="color:#ff6b9d">21</span></div>
+                      <div class="objective-label">Gummiarm uniquement</div>
+                    </div>`;
+                  } else {
+                    leaderObj = `<div class="dash-card card-b">
+                      <div class="player-tag"><span class="symbol">■</span> B gagne si</div>
+                      <div class="objective"><span style="color:#4ecdc4">X</span> – <span style="color:#ff6b9d">≥1</span></div>
+                      <div class="objective-label">Marquer 1 point suffit</div>
+                    </div>`;
+                    trailerObj = `<div class="dash-card card-a">
+                      <div class="player-tag"><span class="symbol">▲</span> A seule chance</div>
+                      <div class="objective"><span style="color:#4ecdc4">21</span> – <span style="color:#ff6b9d">0</span></div>
+                      <div class="objective-label">Gummiarm uniquement</div>
+                    </div>`;
+                  }
+                  gummiCard = `<div class="dash-card card-full">
+                    <div class="player-tag">Gummiarm si score</div>
+                    <div class="objective"><span style="color:#4ecdc4">${leader === "A" ? "0" : "21"}</span> – <span style="color:#ff6b9d">${leader === "A" ? "21" : "0"}</span></div>
+                  </div>`;
+                } else {
+                  // leaderMaxLoss = max que le leader peut encaisser si trailer fait 21
+                  // trailerMinWin = min que le trailer doit marquer pour gagner (si leader fait 21)
+                  const trailerMinWin = leaderMaxLoss + 2; // = 22 - absDelta
+
+                  if (leader === "A") {
+                    leaderObj = `<div class="dash-card card-a">
+                      <div class="player-tag"><span class="symbol">▲</span> A gagne si</div>
+                      <div class="objective">A marque ≥${trailerMinWin}</div>
+                      <div class="objective-label">${trailerMinWin} points suffisent au match</div>
+                    </div>`;
+                    // B (trailer) doit faire 21 et A≤leaderMaxLoss
+                    trailerObj = `<div class="dash-card card-b">
+                      <div class="player-tag"><span class="symbol">■</span> B gagne si</div>
+                      <div class="objective"><span style="color:#4ecdc4">≤${leaderMaxLoss}</span> – <span style="color:#ff6b9d">21</span></div>
+                      <div class="objective-label">A marque max ${leaderMaxLoss}</div>
+                    </div>`;
+                  } else {
+                    // B mène: A (trailer) doit faire 21 et B≤leaderMaxLoss
+                    trailerObj = `<div class="dash-card card-a">
+                      <div class="player-tag"><span class="symbol">▲</span> A gagne si</div>
+                      <div class="objective"><span style="color:#4ecdc4">21</span> – <span style="color:#ff6b9d">≤${leaderMaxLoss}</span></div>
+                      <div class="objective-label">B marque max ${leaderMaxLoss}</div>
+                    </div>`;
+                    leaderObj = `<div class="dash-card card-b">
+                      <div class="player-tag"><span class="symbol">■</span> B gagne si</div>
+                      <div class="objective">B marque ≥${trailerMinWin}</div>
+                      <div class="objective-label">${trailerMinWin} points suffisent au match</div>
+                    </div>`;
+                  }
+                  // Gummiarm: le score qui égalise les totaux
+                  // Si B mène de 18: A doit faire 21, B fait 3 → "21 – 3"
+                  // Si A mène de 18: A fait 3, B doit faire 21 → "3 – 21"
+                  const gummiA = leader === "A" ? gummiLeader : 21;
+                  const gummiB = leader === "A" ? 21 : gummiLeader;
+                  gummiCard = `<div class="dash-card card-full">
+                    <div class="player-tag">Gummiarm si score</div>
+                    <div class="objective"><span style="color:#4ecdc4">${gummiA}</span> – <span style="color:#ff6b9d">${gummiB}</span></div>
+                  </div>`;
+                }
+
+                // Always show A card first (left), then B card (right)
+                const cardA = leader === "A" ? leaderObj : trailerObj;
+                const cardB = leader === "A" ? trailerObj : leaderObj;
+                dashGrid.innerHTML = cardA + cardB + gummiCard;
+              }
+            } else {
+              // 2+ sports remaining
+              const aWinsNow = delta >= 0 ? Math.max(0, 22 - delta) : 22 + absDelta;
+              const bWinsNow = delta <= 0 ? Math.max(0, 22 + delta) : 22 + absDelta;
+
+              dashGrid.innerHTML = `
+                <div class="dash-card card-a">
+                  <div class="player-tag"><span class="symbol">▲</span> A clinch si</div>
+                  <div class="objective">${aWinsNow <= 21 ? `+${aWinsNow}` : "—"}</div>
+                  <div class="objective-label">${aWinsNow <= 21 ? `ex: 21–${21 - aWinsNow}` : "Pas possible ce set"}</div>
+                </div>
+                <div class="dash-card card-b">
+                  <div class="player-tag"><span class="symbol">■</span> B clinch si</div>
+                  <div class="objective">${bWinsNow <= 21 ? `+${bWinsNow}` : "—"}</div>
+                  <div class="objective-label">${bWinsNow <= 21 ? `ex: ${21 - bWinsNow}–21` : "Pas possible ce set"}</div>
+                </div>
+              `;
+            }
+          }
+        } else {
+          dashboard.classList.add("hidden");
+        }
+
+        // Winner highlight
+        totalAEl.classList.remove("winner", "loser");
+        totalBEl.classList.remove("winner", "loser");
+        document
+          .querySelectorAll(".score-input")
+          .forEach((el) => el.classList.remove("winner-glow"));
+        document.querySelectorAll(".sport-row").forEach((el) => el.classList.remove("not-needed"));
+
+        if (matchWinner === "A") {
+          totalAEl.classList.add("winner");
+          totalBEl.classList.add("loser");
+          document.getElementById("labelA").classList.add("winner");
+          // Glow all A inputs
+          document.querySelectorAll(".input-a").forEach((el) => el.classList.add("winner-glow"));
+        } else if (matchWinner === "B") {
+          totalBEl.classList.add("winner");
+          totalAEl.classList.add("loser");
+          document.getElementById("labelB").classList.add("winner");
+          // Glow all B inputs
+          document.querySelectorAll(".input-b").forEach((el) => el.classList.add("winner-glow"));
+        }
+
+        // Dim tennis row if match decided before tennis
+        if (matchWinner && sportsPlayed < 4) {
+          const tenRow = document.querySelector('[data-sport="Tennis"]');
+          if (tenRow) tenRow.classList.add("not-needed");
+        }
+
+      }
+
+      document.querySelectorAll(".score-input").forEach((input) => {
+        input.addEventListener("input", () => {
+          // FIR: no upper cap in traditional scoring; only the 2-point margin matters.
+          if (input.value < 0) input.value = 0;
+          update();
+        });
+        input.addEventListener("focus", () => input.select());
+      });
+
+      // Recap Score Visualization
+      function updateRecap() {
+        const container = document.getElementById("recapContainer");
+        const { sportStates, totalA, totalB, sportsPlayed, errors } = buildMatchState();
+
+        const playedSports = SPORTS.filter((sport) => sportStates[sport.id].counted);
+        const delta = totalA - totalB;
+        const remainingSports = 4 - sportsPlayed;
+        const maxRemaining = remainingSports * 21;
+        const matchDecided = errors.length === 0 && sportsPlayed > 0 && Math.abs(delta) > maxRemaining;
+        const winner = matchDecided ? (delta > 0 ? "A" : "B") : null;
+
+        const sportMeta = {
+          tt: { css: "section-pp", short: "Ping" },
+          bad: { css: "section-bad", short: "Bad" },
+          sq: { css: "section-sq", short: "Squash" },
+          ten: { css: "section-ten", short: "Tennis" },
+        };
+
+        function buildSquares(player) {
+          const chunks = [];
+          playedSports.forEach((sport) => {
+            const state = sportStates[sport.id];
+            const score = player === "A" ? state.aNum : state.bNum;
+            const meta = sportMeta[sport.id];
+            for (let i = 0; i < score; i++) {
+              chunks.push(`<span class="point-square ${meta.css}" title="${meta.short} ${player} point ${i + 1}"></span>`);
+            }
+          });
+          if (!chunks.length) {
+            return `<div class="point-stack"><div class="point-grid empty"><span class="empty-points">—</span></div><div class="score-plateau plateau-${player.toLowerCase()}"></div></div>`;
+          }
+          return `<div class="point-stack"><div class="point-grid" aria-label="${chunks.length} points ${player}">${chunks.join("")}</div><div class="score-plateau plateau-${player.toLowerCase()}"></div></div>`;
+        }
+
+        function buildBalance() {
+          const leader = delta > 0 ? "A" : delta < 0 ? "B" : null;
+          const symbol = delta > 0 ? "▲" : delta < 0 ? "■" : "◆";
+          const cappedDelta = Math.max(-21, Math.min(21, delta));
+          // B en avance (delta négatif) = côté droit qui descend et aiguille à droite.
+          const needleAngle = (-cappedDelta / 21) * 42;
+          const label = leader ? `${symbol} ${leader} +${Math.abs(delta)}` : "Égalité";
+          const labelClass = leader === "A" ? "color-a" : leader === "B" ? "color-b" : "";
+          return `<div class="score-balance">
+            <div class="needle-gauge" aria-label="Écart de score sur une échelle de -21 à +21">
+              <div class="needle-arc"></div>
+              <div class="score-needle" style="transform: translateX(-50%) rotate(${needleAngle}deg)">${label}</div>
+              <div class="needle-pivot"></div>
+            </div>
+            <div class="needle-scale"><span>A +21</span><span>0</span><span>B +21</span></div>
+            <div class="balance-label ${labelClass}">${label}</div>
+          </div>`;
+        }
+
+        function getNextSport() {
+          const idx = SPORTS.findIndex((sport) => !sportStates[sport.id].filled);
+          if (idx < 0) return null;
+          return { ...SPORTS[idx], idx };
+        }
+
+        function buildClinchGuidance() {
+          if (errors.length > 0) {
+            return `<div class="clinch-card muted">Corriger le score pour calculer le seuil.</div>`;
+          }
+          if (sportsPlayed === 0) {
+            return `<div class="clinch-card muted">Joue un sport pour calculer l'écart utile.</div>`;
+          }
+          if (matchDecided) {
+            const sym = winner === "A" ? "▲" : "■";
+            return `<div class="clinch-card clinch-decided">${sym} ${winner} ne peut plus être rattrapé.</div>`;
+          }
+          const nextSport = getNextSport();
+          if (!nextSport) {
+            return delta === 0
+              ? `<div class="clinch-card muted">Égalité : gummiarm.</div>`
+              : `<div class="clinch-card muted">Match terminé aux points.</div>`;
+          }
+
+          // Le match ne s'arrête qu'à la fin du sport en cours : on calcule donc
+          // l'écart minimum à obtenir sur CE sport pour que les sports suivants
+          // ne puissent plus renverser le total.
+          const futureAfterCurrent = (4 - nextSport.idx - 1) * 21;
+          const minMarginA = Math.max(2, futureAfterCurrent - delta + 1);
+          const minMarginB = Math.max(2, futureAfterCurrent + delta + 1);
+          const options = [];
+          if (minMarginA <= 21) options.push({ player: "A", symbol: "▲", cls: "color-a", margin: minMarginA });
+          if (minMarginB <= 21) options.push({ player: "B", symbol: "■", cls: "color-b", margin: minMarginB });
+
+          if (!options.length) {
+            return `<div class="clinch-card muted">Impossible de décider le match dès ${nextSport.name} : il faudra jouer la suite.</div>`;
+          }
+          return `<div class="clinch-card">
+            ${options
+              .map(
+                (opt) => `<div><strong class="${opt.cls}">${opt.symbol} ${opt.player} gagne le match si</strong><br/>il gagne le ${nextSport.name} d'au moins <strong>+${opt.margin}</strong></div>`,
+              )
+              .join("")}
+          </div>`;
+        }
+
+        const trackAClass = matchDecided ? (winner === "A" ? "winner" : "loser") : "";
+        const trackBClass = matchDecided ? (winner === "B" ? "winner winner-b" : "loser") : "";
+        const cappedBalance = Math.max(-21, Math.min(21, delta));
+        const visualStrength = Math.abs(cappedBalance) === 0 ? 0 : 1;
+        const beamAngle = visualStrength * Math.sign(-cappedBalance) * (4 + (Math.abs(cappedBalance) / 21) * 16);
+        const panDrop = visualStrength * (7 + (Math.abs(cappedBalance) / 21) * 22);
+        const panAOffset = delta > 0 ? panDrop : delta < 0 ? -panDrop : 0;
+        const panBOffset = delta < 0 ? panDrop : delta > 0 ? -panDrop : 0;
+
+        container.innerHTML = `
+          <div class="physical-balance" style="--beam-angle:${beamAngle}deg;">
+            <div class="balance-beam" style="transform: rotate(${beamAngle}deg);"></div>
+            <div class="balance-fulcrum"></div>
+            <div class="points-recap">
+              <div class="points-column balance-pan-a recap-track ${trackAClass}" style="transform: translateY(${panAOffset}px);">
+                <div class="track-label label-a">▲ A</div>
+                <div class="track-total">${totalA} pts</div>
+                ${buildSquares("A")}
+              </div>
+
+              <div class="recap-center">
+                ${buildBalance()}
+              </div>
+
+              <div class="points-column balance-pan-b recap-track ${trackBClass}" style="transform: translateY(${panBOffset}px);">
+                <div class="track-label label-b">■ B</div>
+                <div class="track-total">${totalB} pts</div>
+                ${buildSquares("B")}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Call updateRecap from update()
+      const originalUpdate = update;
+      update = function () {
+        originalUpdate();
+        updateRecap();
+      };
+
+      update();
+    </script>
+  </body>
+</html>
