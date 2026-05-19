@@ -1067,7 +1067,7 @@
       </div>
 
       <footer>
-        <p>Racketlon Calc v2.5 • <a href="https://www.racketlon.net">Règles FIR</a></p>
+        <p>Racketlon Calc • <a href="https://www.racketlon.fr/reglements-generaux">Règles Racketlon France</a> • Made by JMU</p>
       </footer>
     </div>
 
@@ -1457,7 +1457,7 @@
 
       document.querySelectorAll(".score-input").forEach((input) => {
         input.addEventListener("input", () => {
-          // FIR: no upper cap in traditional scoring; only the 2-point margin matters.
+          // Traditional racketlon scoring: no upper cap; only the 2-point margin validates completed games.
           if (input.value < 0) input.value = 0;
           update();
         });
